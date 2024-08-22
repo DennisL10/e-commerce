@@ -124,3 +124,47 @@ function actualizarNumerito() {
     let nuevoNumerito = productosEnCarrito.reduce((acc, producto) => acc + producto.cantidad, 0);
     numerito.innerText = nuevoNumerito;
 }
+
+// En main.js
+
+document.addEventListener('DOMContentLoaded', () => {
+    const adminBtn = document.getElementById('admin-btn');
+    const adminModal = document.getElementById('admin-modal');
+    const closeBtn = document.querySelector('.close-btn');
+    const adminForm = document.getElementById('admin-form');
+    const adminArea = document.getElementById('admin-area');
+    
+    const ADMIN_PASSWORD = '1'; // Cambia esto a la contraseña que deseas usar
+
+    // Mostrar el modal de administración
+    adminBtn.addEventListener('click', () => {
+        adminModal.classList.remove('hidden');
+    });
+
+    // Cerrar el modal de administración al hacer clic en la 'X'
+    closeBtn.addEventListener('click', () => {
+        adminModal.classList.add('hidden');
+    });
+
+    // Cerrar el modal si se hace clic fuera del contenido del modal
+    window.addEventListener('click', (event) => {
+        if (event.target === adminModal) {
+            adminModal.classList.add('hidden');
+        }
+    });
+
+    // Manejar el envío del formulario de administración
+    adminForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const password = document.getElementById('admin-password').value;
+        
+        if (password === ADMIN_PASSWORD) {
+            adminModal.classList.add('hidden');
+            adminArea.classList.remove('hidden');
+        } else {
+            alert('Contraseña incorrecta');
+        }
+    });
+});
+
+

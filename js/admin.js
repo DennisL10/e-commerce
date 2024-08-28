@@ -3,74 +3,134 @@ document.addEventListener('DOMContentLoaded', () => {
     const productTable = document.getElementById('product-table').getElementsByTagName('tbody')[0];
     const deleteAllButton = document.getElementById('delete-all');
 
-    const loadProducts = () => {
-        const products = JSON.parse(localStorage.getItem('products')) || [];
-        productTable.innerHTML = '';
-        products.forEach((product, index) => {
-            const row = productTable.insertRow();
-            row.insertCell().textContent = product.name;
-            row.insertCell().innerHTML = `<img src="${product.image}" alt="${product.name}" width="100">`;
-            row.insertCell().textContent = product.category;
-            const actionsCell = row.insertCell();
-            actionsCell.innerHTML = `
-                <button class="edit-button" data-index="${index}">Editar</button>
-                <button class="delete-button" data-index="${index}">Eliminar</button>
-            `;
-        });
+    const apiUrl = 'http://localhost:5000/productos'; // Cambia esta URL si es necesario
 
-        document.querySelectorAll('.edit-button').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const index = event.target.dataset.index;
-                const products = JSON.parse(localStorage.getItem('products')) || [];
-                const product = products[index];
-                document.getElementById('product-name').value = product.name;
-                document.getElementById('product-image').value = product.image;
-                document.getElementById('product-category').value = product.category;
-                productForm.onsubmit = (e) => {
-                    e.preventDefault();
-                    product.name = document.getElementById('product-name').value;
-                    product.image = document.getElementById('product-image').value;
-                    product.category = document.getElementById('product-category').value;
-                    products[index] = product;
-                    localStorage.setItem('products', JSON.stringify(products));
-                    loadProducts();
-                    productForm.reset();
-                    productForm.onsubmit = handleFormSubmit;
-                };
+    // Función para cargar productos desde el servidor
+    const loadProducts = async () => {
+        try {
+            const response = await fetch(apiUrl);
+            const products = await response.json();
+            productTable.innerHTML = '';
+            products.forEach((product) => {
+                const row = productTable.insertRow();
+                row.insertCell().textContent = product.name;
+                row.insertCell().innerHTML = `<img src="${product.image}" alt="${product.name}" width="100">`;
+                row.insertCell().textContent = product.category;
+                row.insertCell().textContent = product.value; // Mostrar el valor
+                row.insertCell().textContent = product.quantity; // Mostrar la cantidad
+                const actionsCell = row.insertCell();
+                actionsCell.innerHTML = `
+                    <button class="edit-button" data-id="${product._id}">Editar</button>
+                    <button class="delete-button" data-id="${product._id}">Eliminar</button>
+                `;
             });
-        });
 
-        document.querySelectorAll('.delete-button').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const index = event.target.dataset.index;
-                let products = JSON.parse(localStorage.getItem('products')) || [];
-                products.splice(index, 1);
-                localStorage.setItem('products', JSON.stringify(products));
-                loadProducts();
+            // Manejo de botones de edición
+            document.querySelectorAll('.edit-button').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const id = event.target.dataset.id;
+                    console.log('ID del producto:', id); // Para verificar el ID
+            
+                    try {
+                        const response = await fetch(`${apiUrl}/${id}`);
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        const product = await response.json();
+                        
+                        // Verifica que `product` tenga los datos correctos
+                        console.log('Datos del producto:', product);
+                        
+                        // Asegúrate de que estos elementos existen en el HTML
+                        document.getElementById('product-name').value = product.name || '';
+                        document.getElementById('product-image').value = product.image || '';
+                        document.getElementById('product-category').value = product.category || '';
+                        document.getElementById('product-value').value = product.value || '';
+                        document.getElementById('product-quantity').value = product.quantity || '';
+            
+                        // Actualizar el formulario para manejar la actualización del producto
+                        productForm.onsubmit = async (e) => {
+                            e.preventDefault();
+                            const updatedProduct = {
+                                name: document.getElementById('product-name').value,
+                                image: document.getElementById('product-image').value,
+                                category: document.getElementById('product-category').value,
+                                value: document.getElementById('product-value').value,
+                                quantity: document.getElementById('product-quantity').value
+                            };
+                            try {
+                                await fetch(`${apiUrl}/${id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(updatedProduct)
+                                });
+                                loadProducts();
+                                productForm.reset();
+                                productForm.onsubmit = handleFormSubmit; // Restaurar el manejador de envío del formulario
+                            } catch (error) {
+                                console.error('Error al actualizar el producto', error);
+                            }
+                        };
+                    } catch (error) {
+                        console.error('Error al cargar el producto', error);
+                    }
+                });
             });
-        });
+            
+
+            // Manejo de botones de eliminación
+            document.querySelectorAll('.delete-button').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const id = event.target.dataset.id;
+                    if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+                        try {
+                            await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+                            loadProducts();
+                        } catch (error) {
+                            console.error('Error al eliminar el producto', error);
+                        }
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error al cargar productos', error);
+        }
     };
 
-    const handleFormSubmit = (e) => {
+    // Manejo del envío del formulario
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
-        const name = document.getElementById('product-name').value;
-        const image = document.getElementById('product-image').value;
-        const category = document.getElementById('product-category').value;
-        
-        const product = { name, image, category };
-        const products = JSON.parse(localStorage.getItem('products')) || [];
-        products.push(product);
-        localStorage.setItem('products', JSON.stringify(products));
-        loadProducts();
-        productForm.reset();
+        const newProduct = {
+            name: document.getElementById('product-name').value,
+            image: document.getElementById('product-image').value,
+            category: document.getElementById('product-category').value,
+            value: document.getElementById('product-value').value,
+            quantity: document.getElementById('product-quantity').value
+        };
+        try {
+            await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newProduct)
+            });
+            loadProducts();
+            productForm.reset();
+        } catch (error) {
+            console.error('Error al agregar el producto', error);
+        }
     };
 
     productForm.onsubmit = handleFormSubmit;
 
-    deleteAllButton.addEventListener('click', () => {
+    // Manejo del botón "Eliminar Todos"
+    deleteAllButton.addEventListener('click', async () => {
         if (confirm('¿Estás seguro de que quieres eliminar todos los productos?')) {
-            localStorage.removeItem('products');
-            loadProducts();
+            try {
+                await fetch(apiUrl, { method: 'DELETE' });
+                loadProducts();
+            } catch (error) {
+                console.error('Error al eliminar todos los productos', error);
+            }
         }
     });
 

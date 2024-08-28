@@ -30,6 +30,14 @@
                     <option value="monitors">Monitores</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="product-value">Valor:</label>
+                <input type="number" id="product-value" name="value" required>
+            </div>
+            <div class="form-group">
+                <label for="product-quantity">Cantidad:</label>
+                <input type="number" id="product-quantity" name="quantity" required>
+            </div>
             <div class="button-group">
                 <button type="submit">Agregar Producto</button>
                 <button type="button" id="delete-all">Eliminar Todos</button>
@@ -43,6 +51,8 @@
                         <th>Nombre</th>
                         <th>Imagen</th>
                         <th>Categoría</th>
+                        <th>Valor</th>
+                        <th>Cantidad</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
